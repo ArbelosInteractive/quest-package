@@ -1,0 +1,22 @@
+{
+  "name": "com.arbelos.quests",
+  "version": "1.0.0",
+  "displayName": "Quest-Package",
+  "description": "A package of scripts for quests and dialog.",
+  "unity": "2021.3",
+  "unityRelease": "3f1",
+  "documentationUrl": "https://example.com/",
+  "changelogUrl": "https://github.com/ArbelosInteractive/quest-package/blob/main/CHANGELOG.md",
+  "licensesUrl": "https://example.com/licensing.html",
+  "keywords": [
+    "Quests",
+    "Dialog",
+    "Arbelos"
+  ],
+  "author": {
+    "name": "Arbelos Interactive Inc",
+    "email": "hello@arbelosinteractive.com",
+    "url": "https://www.arbelosinteractive.com/"
+  },
+  "type": "library"
+}
