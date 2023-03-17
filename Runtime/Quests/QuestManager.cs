@@ -171,7 +171,7 @@ namespace Arbelos
                 questList.Add(newQuest);
                 int index = newQuest.objectives.FindIndex(a => a.sequence == 1);
                 await StartObjective(newQuest.id, newQuest.objectives[index].user_objective.id);
-                questLog.AddQuestToLog(newQuest);
+                questLog.AddQuestToLog(quest, 0);
                 Debug.Log($"<color={debugColor}>Quest Started: {questId}</color>");
                 return;
             }
@@ -263,7 +263,7 @@ namespace Arbelos
                                 List<string> dialogs = GetDialogueData(objective);
                                 if (dialogs.Count > 0)
                                 {
-                                    DialogueManager.Instance.StartConversation(dialogs, objective.end_game_object.firstName, objective.end_game_object.lastName);
+                                    dialogueManager.StartConversation(dialogs, objective.end_game_object.firstName, objective.end_game_object.lastName);
                                 }
 
                                 await gooruManager.CompleteObjective(userObjectiveId, questServiceObject);
@@ -286,7 +286,7 @@ namespace Arbelos
                             if (objective.sequence == quest.objectives.Count)
                             {
                                 questLog.RemoveQuestFromLog(quest.id);
-                                DialogueManager.Instance.SetAtEndOfQuest(true);
+                                dialogueManager.SetAtEndOfQuest(true);
                                 Debug.Log("Final objective complete!");
 
                                 int nextQuestId = 0;
