@@ -1,0 +1,17 @@
+{
+    "name": "com.Quests",
+    "rootNamespace": "",
+    "references": [
+        "Unity.TextMeshPro",
+        "com.groogu"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
