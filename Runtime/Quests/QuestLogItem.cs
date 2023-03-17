@@ -22,11 +22,8 @@ namespace Arbelos
         {
             titleText = titleTextObject.GetComponent<TMP_Text>();
             objectiveText = objectiveTextObject.GetComponent<TMP_Text>();
-
             SetTitleText(quest.title);
-            int index = quest.objectives.FindIndex(a => a.sequence == 1);
-            SetObjectiveText(quest.objectives[index].title);
-            SetObjectiveIndex(index);
+            SetObjectiveText(quest.objectives[objectiveIndex].title);
         }
 
         public void SetTitleText(string text)
@@ -36,11 +33,6 @@ namespace Arbelos
         public void SetObjectiveText(string text)
         {
             objectiveText.text = text;
-        }
-
-        public void SetObjectiveIndex(int index)
-        {
-            objectiveIndex = index;
         }
     }
 }

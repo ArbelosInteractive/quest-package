@@ -14,6 +14,7 @@ namespace Arbelos
         public int currentSequence = 0;
         private string collectionId = "";
         public List<GameObject> objectiveObjects;
+        private string debugColor = "#e8d168";
 
         //public objects
         public GameObject globalObject;
@@ -46,33 +47,6 @@ namespace Arbelos
             return await gooruManager.GetAllQuests();
         }
 
-        public async Task StartFirstQuest()
-        {
-            try
-            {
-                List<Quest> quests = new List<Quest>();
-                quests = await GetAllQuests();
-                foreach (Quest quest in quests)
-                {
-                    if (quest.user_quest.sequence == 1)
-                    {
-                        try
-                        {
-                            await StartQuest(quest.id);
-                        }
-                        catch (Exception e)
-                        {
-                            Debug.LogError($"StartQuest failed in StartFirstQuest: {e.Message}");
-                        }
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Debug.LogError($"StartFirstQuest failed: {e.Message}");
-            }
-        }
-
         private async Task<Quest> GetQuest(int questId)
         {
             Quest newQuest = new Quest();
@@ -90,7 +64,7 @@ namespace Arbelos
                 }
             }
 
-            Debug.Log("Quest: " + questId + " not found in GetQuestFromList. Null returned.");
+            Debug.Log($"<color={debugColor}>Quest: " + questId + " not found in GetQuestFromList. Null returned.</color>");
             return null;
         }
 
@@ -119,22 +93,75 @@ namespace Arbelos
                 }
             }
 
-            Debug.Log("Objective: " + objectiveId + " not found in GetQuestFromQuestListByObjectiveId. Null returned.");
+            Debug.Log($"<color={debugColor}>Objective: " + objectiveId + " not found in GetQuestFromQuestListByObjectiveId. Null returned.</color>");
             return null;
+        }
+
+        public async Task InitializeQuests()
+        {
+            try
+            {
+                List<Quest> quests = new List<Quest>();
+                quests = await GetAllQuests();
+                quests.Sort((x, y) => x.user_quest.sequence.CompareTo(y.user_quest.sequence));
+                foreach (Quest quest in quests)
+                {
+                    if (quest.user_quest.sequence == 1 && quest.user_quest.progress == 0)
+                    {
+                        Debug.Log($"<color={debugColor}> First quest in sequence starting: {quest.id} | {quest.title}</color>");
+                        await StartQuest(quest.id);
+                        return;
+                    }
+                    else
+                    {
+                        if (quest.user_quest.progress < 100)
+                        {
+                            Debug.Log($"<color={debugColor}> Found quest with progress under 100: {quest.id} | {quest.title}</color>");
+                            await ResumeQuest(quest);
+                            return;
+                        }
+                    }
+                }
+                Debug.Log($"<color={debugColor}> No quest found with less than 100 progress. All Quests finished???</color>");
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"RestoreQuestProgress failed: {e.Message}");
+            }
+        }
+
+        private async Task ResumeQuest(Quest quest)
+        {
+            quest.objectives.Sort((x, y) => x.sequence.CompareTo(y.sequence));
+            foreach (Objective objective in quest.objectives)
+            {
+                if (objective.user_objective.progress < 100)
+                {
+                    questList.Add(quest);
+                    currentSequence = quest.objectives.FindIndex(a => a.user_objective.id == objective.user_objective.id);
+
+                    Debug.Log($"<color=blue>{currentSequence}</color>");
+
+                    await StartObjective(quest.id, quest.objectives[currentSequence].user_objective.id);
+                    questLog.AddQuestToLog(quest, currentSequence);
+                    Debug.Log($"<color={debugColor}>Resuming quest: {quest.id} at user-objective: {objective.user_objective.id}</color>");
+                    return;
+                }
+            }
         }
 
         public async Task StartQuest(int questId)
         {
             if (GetQuestFromQuestList(questId) != null)
             {
-                Debug.Log("(ERROR) Quest: " + questId + " is already in the QuestList!");
+                Debug.Log($"<color={debugColor}>Quest: " + questId + " is already in the QuestList!</color>");
                 return;
             }
 
             Quest newQuest = await GetQuest(questId);
             if (newQuest == null)
             {
-                Debug.Log("(ERROR) Quest: " + questId + " returned null from the server!");
+                Debug.Log($"<color={debugColor}>Quest: " + questId + " returned null from the server!</color>");
                 return;
             }
 
@@ -145,12 +172,12 @@ namespace Arbelos
                 int index = newQuest.objectives.FindIndex(a => a.sequence == 1);
                 await StartObjective(newQuest.id, newQuest.objectives[index].user_objective.id);
                 questLog.AddQuestToLog(newQuest);
-                Debug.Log("Quest Started: " + questId);
+                Debug.Log($"<color={debugColor}>Quest Started: {questId}</color>");
                 return;
             }
             catch (Exception e)
             {
-                Debug.Log("(ERROR) Failed to start quest: " + questId);
+                Debug.LogError($"Failed to start quest: questId");
                 throw e;
             }
         }
@@ -159,7 +186,7 @@ namespace Arbelos
         {
             if (GetQuestFromQuestList(questId) == null)
             {
-                Debug.Log("Quest: " + questId + " is not in the questList. StartObjective failed.");
+                Debug.Log($"<color={debugColor}>Quest: {questId} is not in the questList. StartObjective: {userObjectiveId} failed.</color>");
                 return;
             }
 
@@ -180,64 +207,52 @@ namespace Arbelos
                                     {
                                         objectiveObject.GetComponent<ObjectiveObject>().SetInfo(questId, objective);
                                         objectiveObject.GetComponentInChildren<NPCQuestMarker>(true).gameObject.SetActive(true);
+
                                         try
                                         {
                                             collectionId = objective.navigator_objective_detail.collection_id;
                                         }
                                         catch
                                         {
-                                            Debug.Log("CollectionId is null.");
+                                            Debug.Log($"<color={debugColor}>CollectionId is null for user_objective: {objective.user_objective.id}</color>");
                                         }
 
+                                        //show StartOfObjectiveDialog here in the future
 
-                                        // List<string> dialogs = GetDialogueData(objective);
-                                        // if (dialogs.Count > 0)
-                                        // {
-                                        //     DialogueManager.Instance.StartConversation(dialogs, objective.end_game_object.firstName, objective.end_game_object.lastName);
-                                        // }
-
-                                        Debug.Log("(SUCCESS) Objective Object set to ID: " + objectiveObject.GetComponent<ObjectiveObject>().npcId);
-                                        Debug.Log($"Objective: ({objective.title}) started!");
+                                        Debug.Log($"<color={debugColor}>Objective: ({objective.title}) started!</color>");
                                         return;
                                     }
                                 }
                             }
                             catch (Exception e)
                             {
-                                Debug.LogError($"(ERROR) Failed to start objective: UserObjectiveId: {userObjectiveId} in Quest: {quest.id} \n{e.Message}");
+                                Debug.LogError($"Failed to start objective: UserObjectiveId: {userObjectiveId} in Quest: {quest.id} \n{e.Message}");
                             }
-
                         }
                     }
-                    Debug.Log("(ERROR) Objective: " + userObjectiveId + " not found.");
+                    Debug.Log($"<color={debugColor}>Objective: {userObjectiveId} not found.</color>");
                     return;
                 }
             }
         }
+
 
         public async Task CompleteObjective(int questId, int userObjectiveId)
         {
             QuestServiceObject questServiceObject = new QuestServiceObject();
             if (GetQuestFromQuestList(questId) == null)
             {
-                Debug.Log("Quest: " + questId + " is not in the questList. Completing without quest.");
-
+                Debug.Log($"<color={debugColor}>Quest: {questId} is not in the questList. Completing without quest.</color>");
                 questServiceObject.withQuest = "false";
                 await gooruManager.CompleteObjective(userObjectiveId, questServiceObject);
                 return;
-            }
-
-            foreach (Quest quest1 in questList)
-            {
-                Debug.Log($"QuestIdTest: {quest1.id}");
-                Debug.Log($"UserQuestIdTest: {quest1.user_quest.id}");
             }
 
             foreach (Quest quest in questList)
             {
                 if (quest.id == questId)
                 {
-                    Debug.Log($"Quest Id: {quest.id}");
+                    Debug.Log($"<color={debugColor}>Quest Id: {quest.id}</color>");
                     foreach (Objective objective in quest.objectives)
                     {
                         if (objective.user_objective.id == userObjectiveId)
@@ -248,7 +263,7 @@ namespace Arbelos
                                 List<string> dialogs = GetDialogueData(objective);
                                 if (dialogs.Count > 0)
                                 {
-                                    dialogueManager.StartConversation(dialogs, objective.end_game_object.firstName, objective.end_game_object.lastName);
+                                    DialogueManager.Instance.StartConversation(dialogs, objective.end_game_object.firstName, objective.end_game_object.lastName);
                                 }
 
                                 await gooruManager.CompleteObjective(userObjectiveId, questServiceObject);
@@ -257,28 +272,28 @@ namespace Arbelos
                                     if (objectiveObject.GetComponent<ObjectiveObject>().npcId == objective.end_game_object_id)
                                     {
                                         objectiveObject.GetComponentInChildren<NPCQuestMarker>(true).gameObject.SetActive(false);
-                                        Debug.Log($"Objective {objective.title} Complete!");
+                                        Debug.Log($"<color={debugColor}>Objective {objective.title} Complete!</color>");
                                         break;
                                     }
                                 }
                             }
                             catch (Exception e)
                             {
-                                Debug.LogError($"(ERROR) Failed to complete objective: UserObjectiveId: {userObjectiveId} in Quest: {quest.id} \n{e.Message}");
+                                Debug.LogError($"Failed to complete objective: UserObjectiveId: {userObjectiveId} in Quest: {quest.id} \n{e.Message}");
                                 return;
                             }
 
                             if (objective.sequence == quest.objectives.Count)
                             {
                                 questLog.RemoveQuestFromLog(quest.id);
-                                dialogueManager.SetAtEndOfQuest(true);
+                                DialogueManager.Instance.SetAtEndOfQuest(true);
                                 Debug.Log("Final objective complete!");
 
                                 int nextQuestId = 0;
                                 try
                                 {
                                     nextQuestId = await GetNextQuestId(quest.user_quest.id);
-                                    Debug.Log($"NextQuestId: {nextQuestId} for Quest: {quest.user_quest.id}");
+                                    Debug.Log($"<color={debugColor}>NextQuestId: {nextQuestId} for Quest: {quest.user_quest.id}</color>");
                                 }
                                 catch (Exception e)
                                 {
@@ -290,7 +305,7 @@ namespace Arbelos
                                     try
                                     {
                                         await StartQuest(nextQuestId);
-                                        Debug.Log("Starting new quest: " + nextQuestId);
+                                        Debug.Log($"<color={debugColor}>Starting new quest: {nextQuestId}</color>");
                                     }
                                     catch (Exception e)
                                     {
@@ -299,7 +314,7 @@ namespace Arbelos
                                 }
                                 else
                                 {
-                                    Debug.Log($"Final Quest Complete???? | NextQuestId: {nextQuestId} | UserQuestId: {quest.user_quest.id}");
+                                    Debug.Log($"<color={debugColor}>Final Quest Complete: NextQuestId: {nextQuestId} | UserQuestId: {quest.user_quest.id}</color>");
                                 }
                                 questList.Remove(quest);
                             }
@@ -307,23 +322,24 @@ namespace Arbelos
                             {
                                 currentSequence = quest.objectives.FindIndex(a => a.sequence == objective.sequence + 1);
                                 await StartObjective(quest.id, quest.objectives[currentSequence].user_objective.id);
-                                Debug.Log($"(UpdateQuestInLog) QuestId: {quest.id} | UserObjectiveId: {quest.objectives[currentSequence].user_objective.id}");
+                                Debug.Log($"<color={debugColor}>(UpdateQuestInLog) QuestId: {quest.id} | UserObjectiveId: {quest.objectives[currentSequence].user_objective.id}</color>");
                                 questLog.UpdateQuestInLog(quest.id, quest.objectives[currentSequence].user_objective.id);
                             }
                             return;
                         }
                     }
-                    Debug.Log("(ERROR) Objective:" + userObjectiveId + " not found.");
+                    Debug.Log("<color={debugColor}>Objective:" + userObjectiveId + " not found.</color>");
                     return;
                 }
             }
         }
 
+
         //NPC
         public void AddToObjectiveObjectsList(GameObject objectiveObject)
         {
             objectiveObjects.Add(objectiveObject);
-            Debug.Log(objectiveObject.GetComponent<ObjectiveObject>().npcId + " added to ObjectiveObjects list!");
+            Debug.Log($"<color={debugColor}>{objectiveObject.GetComponent<ObjectiveObject>().npcId} added to ObjectiveObjects list!</color>");
         }
 
         public List<string> GetDialogueData(Objective objective)
@@ -338,7 +354,7 @@ namespace Arbelos
                 foreach (var message in sortedMessages)
                 {
                     dialogueText.Add(message.text);
-                    Debug.Log("<color=purple>Message: </color>" + message.text);
+                    Debug.Log($"<color={debugColor}>Message: </color>{message.text}</color>");
                 }
             }
 

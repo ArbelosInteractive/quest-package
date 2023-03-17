@@ -19,22 +19,14 @@ namespace Arbelos
         private void Awake()
         {
             questManager = questManagerObject.GetComponent<QuestManager>();
-            PopulateQuestLog();
         }
 
-        public void PopulateQuestLog()
-        {
-            //TODO:
-            //After quest data is collected from the server
-            //iterate through list of quests and instantiate log items
-            //if there are quests still in progress
-        }
-
-        public void AddQuestToLog(Quest quest)
+        public void AddQuestToLog(Quest quest, int objectiveIndex)
         {
             GameObject item = Instantiate(questLogItemObject, questLogViewport.transform);
             item.GetComponent<QuestLogItem>().quest = quest;
             item.GetComponent<QuestLogItem>().questManager = questManager;
+            item.GetComponent<QuestLogItem>().objectiveIndex = objectiveIndex;
             item.GetComponent<QuestLogItem>().questLog = this;
             questLogItems.Add(item);
         }
@@ -46,7 +38,6 @@ namespace Arbelos
                 if (questLogItem.GetComponent<QuestLogItem>().quest.id == questId)
                 {
                     questLogItem.SetActive(false);
-                    //Destroy(questLogItem);
                     return;
                 }
             }
