@@ -171,7 +171,7 @@ namespace Arbelos
                 questList.Add(newQuest);
                 int index = newQuest.objectives.FindIndex(a => a.sequence == 1);
                 await StartObjective(newQuest.id, newQuest.objectives[index].user_objective.id);
-                questLog.AddQuestToLog(quest, 0);
+                questLog.AddQuestToLog(newQuest, 0);
                 Debug.Log($"<color={debugColor}>Quest Started: {questId}</color>");
                 return;
             }
