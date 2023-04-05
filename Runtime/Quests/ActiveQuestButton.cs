@@ -19,6 +19,7 @@ public class ActiveQuestButton : MonoBehaviour
 
     private void Start()
     {
+        Instance = this;
         SetActiveQuestButtonDefaults();
     }
 

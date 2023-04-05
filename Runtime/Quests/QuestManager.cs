@@ -21,6 +21,7 @@ namespace Arbelos
 
         //component references
         private IDialogueManager dialogueManager;
+        private ActiveQuestButton activeQuestButton;
 
         //events
         public delegate void OnQuestStarted();
@@ -42,6 +43,11 @@ namespace Arbelos
             {
                 IEnumerable<IDialogueManager> dialogueManagerList = FindObjectsOfType<MonoBehaviour>().OfType<IDialogueManager>();
                 dialogueManager = dialogueManagerList.ElementAt(0); //realistically there should only be 1
+            }
+
+            if (activeQuestButton == null)
+            {
+                activeQuestButton = ActiveQuestButton.Instance;
             }
         }
 
@@ -143,7 +149,7 @@ namespace Arbelos
                     questList.Add(quest);
                     currentSequence = quest.objectives.FindIndex(a => a.user_objective.id == objective.user_objective.id);
 
-                    Debug.Log($"<color=blue>{currentSequence}</color>");
+                    Debug.Log($"<color={debugColor}>Current Sequence: {currentSequence}</color>");
 
                     await StartObjective(quest.id, quest.objectives[currentSequence].user_objective.id);
                     ActiveQuestButton.Instance.SetActiveQuestButtonText(quest.title, quest.objectives[currentSequence].title);
