@@ -12,21 +12,16 @@ namespace Arbelos
         //fields
         private List<Quest> questList = new List<Quest>();
         private Quest activeQuest = new Quest();
-
-        public int currentSequence = 0;
         private string collectionId = "";
         public List<GameObject> objectiveObjects;
-        private string debugColor = "#e8d168";
+        public int currentSequence = 0;
 
-        //public objects
-        public GameObject globalObject;
-        public GameObject questLogObject;
-        public GameObject npcCanvasObject;
+        //constants
+        private const string debugColor = "#e8d168";
 
         //component references
-        private GooruManager gooruManager;
         private IDialogueManager dialogueManager;
-        private QuestLog questLog;
+        private ActiveQuestButton activeQuestButton;
 
         //events
         public delegate void OnQuestStarted();
@@ -38,30 +33,33 @@ namespace Arbelos
         public delegate void OnObjectiveCompleted();
         public static event OnObjectiveCompleted onObjectiveCompleted;
 
+        //Singleton
         public static QuestManager Instance { get; private set; }
 
         private void Awake()
         {
             Instance = this;
-            gooruManager = globalObject.GetComponent<GooruManager>();
-            questLog = questLogObject.GetComponent<QuestLog>();
-
             if (dialogueManager == null)
             {
                 IEnumerable<IDialogueManager> dialogueManagerList = FindObjectsOfType<MonoBehaviour>().OfType<IDialogueManager>();
                 dialogueManager = dialogueManagerList.ElementAt(0); //realistically there should only be 1
             }
+
+            if (activeQuestButton == null)
+            {
+                activeQuestButton = ActiveQuestButton.Instance;
+            }
         }
 
         private async Task<List<Quest>> GetAllQuests()
         {
-            return await gooruManager.GetAllQuests();
+            return await GooruManager.Instance.GetAllQuests();
         }
 
         private async Task<Quest> GetQuest(int questId)
         {
             Quest newQuest = new Quest();
-            newQuest = await gooruManager.GetQuest(questId);
+            newQuest = await GooruManager.Instance.GetQuest(questId);
             return newQuest;
         }
 
@@ -82,7 +80,7 @@ namespace Arbelos
         public async Task<int> GetNextQuestId(int questId)
         {
             NextQuestResponse nextQuest = new NextQuestResponse();
-            nextQuest = await gooruManager.GetNextQuest(questId);
+            nextQuest = await GooruManager.Instance.GetNextQuest(questId);
             return nextQuest.quest_id;
         }
 
@@ -151,10 +149,11 @@ namespace Arbelos
                     questList.Add(quest);
                     currentSequence = quest.objectives.FindIndex(a => a.user_objective.id == objective.user_objective.id);
 
-                    Debug.Log($"<color=blue>{currentSequence}</color>");
+                    Debug.Log($"<color={debugColor}>Current Sequence: {currentSequence}</color>");
 
                     await StartObjective(quest.id, quest.objectives[currentSequence].user_objective.id);
-                    questLog.AddQuestToLog(quest, currentSequence);
+                    ActiveQuestButton.Instance.SetActiveQuestButtonText(quest.title, quest.objectives[currentSequence].title);
+                    //questLog.AddQuestToLog(quest, currentSequence);
                     Debug.Log($"<color={debugColor}>Resuming quest: {quest.id} at user-objective: {objective.user_objective.id}</color>");
                     return;
                 }
@@ -178,11 +177,12 @@ namespace Arbelos
 
             try
             {
-                await gooruManager.StartQuest(newQuest.user_quest.id);
+                await GooruManager.Instance.StartQuest(newQuest.user_quest.id);
                 questList.Add(newQuest);
                 int index = newQuest.objectives.FindIndex(a => a.sequence == 1);
                 await StartObjective(newQuest.id, newQuest.objectives[index].user_objective.id);
-                questLog.AddQuestToLog(newQuest, 0);
+                ActiveQuestButton.Instance.SetActiveQuestButtonText(newQuest.title, newQuest.objectives[0].title);
+                //questLog.AddQuestToLog(newQuest, 0);
                 onQuestStarted();
                 Debug.Log($"<color={debugColor}>Quest Started: {questId}</color>");
                 return;
@@ -212,7 +212,7 @@ namespace Arbelos
                         {
                             try
                             {
-                                await gooruManager.StartObjective(userObjectiveId);
+                                await GooruManager.Instance.StartObjective(userObjectiveId);
                                 onObjectiveStarted();
                                 foreach (GameObject objectiveObject in objectiveObjects)
                                 {
@@ -259,7 +259,7 @@ namespace Arbelos
             {
                 Debug.Log($"<color={debugColor}>Quest: {questId} is not in the questList. Completing without quest.</color>");
                 questServiceObject.withQuest = "false";
-                await gooruManager.CompleteObjective(userObjectiveId, questServiceObject);
+                await GooruManager.Instance.CompleteObjective(userObjectiveId, questServiceObject);
                 return;
             }
 
@@ -284,7 +284,7 @@ namespace Arbelos
                                 }
 
                                 //post request to backend that this objective is complete
-                                await gooruManager.CompleteObjective(userObjectiveId, questServiceObject);
+                                await GooruManager.Instance.CompleteObjective(userObjectiveId, questServiceObject);
                                 onObjectiveCompleted();
 
                                 //hide quest marker on current ObjectiveObject
@@ -308,9 +308,8 @@ namespace Arbelos
                             //this objective is the final one in the quest
                             if (objective.sequence == quest.objectives.Count)
                             {
-                                questLog.RemoveQuestFromLog(quest.id);
                                 dialogueManager.SetAtEndOfQuest(true);
-                                Debug.Log("Final objective complete!");
+                                Debug.Log($"<color={debugColor}>Final objective complete!</color>");
 
                                 int nextQuestId = 0;
                                 try
@@ -339,8 +338,9 @@ namespace Arbelos
                                 }
                                 else
                                 {
-                                    Debug.Log($"<color={debugColor}>Final Quest Complete: NextQuestId: {nextQuestId} | UserQuestId: {quest.user_quest.id}</color>");
+                                    Debug.Log($"<color={debugColor}>Final Quest Complete!</color>");
                                 }
+                                ActiveQuestButton.Instance.SetActiveQuestButtonDefaults();
                                 questList.Remove(quest);
                             }
                             //this objective is the not final one in the quest
@@ -349,7 +349,8 @@ namespace Arbelos
                                 currentSequence = quest.objectives.FindIndex(a => a.sequence == objective.sequence + 1);
                                 await StartObjective(quest.id, quest.objectives[currentSequence].user_objective.id);
                                 Debug.Log($"<color={debugColor}>(UpdateQuestInLog) QuestId: {quest.id} | UserObjectiveId: {quest.objectives[currentSequence].user_objective.id}</color>");
-                                questLog.UpdateQuestInLog(quest.id, quest.objectives[currentSequence].user_objective.id);
+                                ActiveQuestButton.Instance.SetActiveQuestButtonText("", quest.objectives[currentSequence].title);
+                                //questLog.UpdateQuestInLog(quest.id, quest.objectives[currentSequence].user_objective.id);
                             }
                             return;
                         }
