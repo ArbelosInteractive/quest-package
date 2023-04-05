@@ -146,7 +146,7 @@ namespace Arbelos
                     Debug.Log($"<color=blue>{currentSequence}</color>");
 
                     await StartObjective(quest.id, quest.objectives[currentSequence].user_objective.id);
-                    ActiveQuestButton.Instance.SetActiveQuestViewText(quest.title, quest.objectives[currentSequence].title);
+                    ActiveQuestButton.Instance.SetActiveQuestButtonText(quest.title, quest.objectives[currentSequence].title);
                     //questLog.AddQuestToLog(quest, currentSequence);
                     Debug.Log($"<color={debugColor}>Resuming quest: {quest.id} at user-objective: {objective.user_objective.id}</color>");
                     return;
@@ -175,7 +175,7 @@ namespace Arbelos
                 questList.Add(newQuest);
                 int index = newQuest.objectives.FindIndex(a => a.sequence == 1);
                 await StartObjective(newQuest.id, newQuest.objectives[index].user_objective.id);
-                ActiveQuestButton.Instance.SetActiveQuestViewText(newQuest.title, newQuest.objectives[0].title);
+                ActiveQuestButton.Instance.SetActiveQuestButtonText(newQuest.title, newQuest.objectives[0].title);
                 //questLog.AddQuestToLog(newQuest, 0);
                 onQuestStarted();
                 Debug.Log($"<color={debugColor}>Quest Started: {questId}</color>");
@@ -334,7 +334,7 @@ namespace Arbelos
                                 {
                                     Debug.Log($"<color={debugColor}>Final Quest Complete!</color>");
                                 }
-                                ActiveQuestButton.Instance.SetActiveQuestViewDefaults();
+                                ActiveQuestButton.Instance.SetActiveQuestButtonDefaults();
                                 questList.Remove(quest);
                             }
                             //this objective is the not final one in the quest
@@ -343,7 +343,7 @@ namespace Arbelos
                                 currentSequence = quest.objectives.FindIndex(a => a.sequence == objective.sequence + 1);
                                 await StartObjective(quest.id, quest.objectives[currentSequence].user_objective.id);
                                 Debug.Log($"<color={debugColor}>(UpdateQuestInLog) QuestId: {quest.id} | UserObjectiveId: {quest.objectives[currentSequence].user_objective.id}</color>");
-                                ActiveQuestButton.Instance.SetActiveQuestViewText("", quest.objectives[currentSequence].title);
+                                ActiveQuestButton.Instance.SetActiveQuestButtonText("", quest.objectives[currentSequence].title);
                                 //questLog.UpdateQuestInLog(quest.id, quest.objectives[currentSequence].user_objective.id);
                             }
                             return;

@@ -5,18 +5,30 @@ using TMPro;
 
 public class ActiveQuestButton : MonoBehaviour
 {
+    //component references
     [SerializeField] public TMP_Text questTitle;
     [SerializeField] public TMP_Text objectiveTitle;
+
+    //constants
     private const string defaultQuestTitle = "No active quest";
     private const string defaultObjectiveTitle = "Tap here to open the quest menu and choose an active quest.";
+    private const string debugColor = "#e8d168";
+
+    //singleton
     public static ActiveQuestButton Instance { get; private set; }
+
+    private void Start()
+    {
+        SetActiveQuestButtonDefaults();
+    }
 
     public void ShowQuestList()
     {
         //open window to new screens
+        Debug.Log($"<color={debugColor}>Show Quest Window!</color>");
     }
 
-    public void SetActiveQuestViewText(string objectiveTitleText, string questTitleText = null)
+    public void SetActiveQuestButtonText(string objectiveTitleText, string questTitleText = null)
     {
         if (questTitleText != null)
         {
@@ -25,7 +37,7 @@ public class ActiveQuestButton : MonoBehaviour
         objectiveTitle.text = objectiveTitleText;
     }
 
-    public void SetActiveQuestViewDefaults()
+    public void SetActiveQuestButtonDefaults()
     {
         questTitle.text = defaultQuestTitle;
         objectiveTitle.text = defaultObjectiveTitle;
