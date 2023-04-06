@@ -153,7 +153,6 @@ namespace Arbelos
 
                     await StartObjective(quest.id, quest.objectives[currentSequence].user_objective.id);
                     ActiveQuestButton.Instance.SetActiveQuestButtonText(quest.title, quest.objectives[currentSequence].title);
-                    //questLog.AddQuestToLog(quest, currentSequence);
                     Debug.Log($"<color={debugColor}>Resuming quest: {quest.id} at user-objective: {objective.user_objective.id}</color>");
                     return;
                 }
@@ -182,7 +181,6 @@ namespace Arbelos
                 int index = newQuest.objectives.FindIndex(a => a.sequence == 1);
                 await StartObjective(newQuest.id, newQuest.objectives[index].user_objective.id);
                 ActiveQuestButton.Instance.SetActiveQuestButtonText(newQuest.title, newQuest.objectives[0].title);
-                //questLog.AddQuestToLog(newQuest, 0);
                 onQuestStarted();
                 Debug.Log($"<color={debugColor}>Quest Started: {questId}</color>");
                 return;
@@ -229,8 +227,6 @@ namespace Arbelos
                                         {
                                             Debug.Log($"<color={debugColor}>CollectionId is null for user_objective: {objective.user_objective.id}</color>");
                                         }
-
-                                        //show StartOfObjectiveDialog here in the future
 
                                         Debug.Log($"<color={debugColor}>Objective: ({objective.title}) started!</color>");
                                         return;
@@ -350,7 +346,6 @@ namespace Arbelos
                                 await StartObjective(quest.id, quest.objectives[currentSequence].user_objective.id);
                                 Debug.Log($"<color={debugColor}>(UpdateQuestInLog) QuestId: {quest.id} | UserObjectiveId: {quest.objectives[currentSequence].user_objective.id}</color>");
                                 ActiveQuestButton.Instance.SetActiveQuestButtonText("", quest.objectives[currentSequence].title);
-                                //questLog.UpdateQuestInLog(quest.id, quest.objectives[currentSequence].user_objective.id);
                             }
                             return;
                         }
@@ -361,6 +356,10 @@ namespace Arbelos
             }
         }
 
+        public void SetQuestAsActiveQuest(Quest quest)
+        {
+            activeQuest = quest;
+        }
 
         //NPC
         public void AddToObjectiveObjectsList(GameObject objectiveObject)
