@@ -280,7 +280,7 @@ namespace Arbelos
                                 List<string> dialogs = GetDialogueData(objective);
                                 if (dialogs.Count > 0)
                                 {
-                                    dialogueManager.StartConversation(dialogs, objective.end_game_object.firstName, objective.end_game_object.lastName);
+                                    dialogueManager.StartConversation(dialogs, objective.end_game_object.first_name, objective.end_game_object.last_name);
                                 }
 
                                 //post request to backend that this objective is complete
