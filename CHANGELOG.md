@@ -14,7 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Added ActiveQuestButton support
 
-## [1.0.1] - 2023-04-1
-### Added
+## [1.0.2] - 2023-04-11
+### Updated
 - fixed field names in Quest.cs
+
+## [1.0.3] - 2023-04-12
+### Updated
+- changed default values for ActiveQuestButton
 

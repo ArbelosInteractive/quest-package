@@ -26,7 +26,7 @@ public class ActiveQuestButton : MonoBehaviour
     public void ShowQuestList()
     {
         //open window to new screens
-        Debug.Log($"<color={debugColor}>Show Quest Window!</color>");
+        Debug.Log($"<color={debugColor}>Show Quest Window Test!</color>");
     }
 
     public void SetActiveQuestButtonText(string objectiveTitleText, string questTitleText = null)
