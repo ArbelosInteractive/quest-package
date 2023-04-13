@@ -22,3 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Updated
 - changed default values for ActiveQuestButton
 
+## [1.0.4] - 2023-04-13
+### Updated
+- 1.0.3 changes seems to have been overwritten, redoing 1.0.3 intended changes
+

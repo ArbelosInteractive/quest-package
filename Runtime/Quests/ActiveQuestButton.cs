@@ -10,8 +10,8 @@ public class ActiveQuestButton : MonoBehaviour
     [SerializeField] public TMP_Text objectiveTitle;
 
     //constants
-    private const string defaultQuestTitle = "No active quest";
-    private const string defaultObjectiveTitle = "Tap here to open the quest menu and choose an active quest.";
+    private const string defaultQuestTitle = "No Active Quest";
+    private const string defaultObjectiveTitle = "Talk to DV to begin or resume.";
     private const string debugColor = "#e8d168";
 
     //singleton
@@ -26,7 +26,7 @@ public class ActiveQuestButton : MonoBehaviour
     public void ShowQuestList()
     {
         //open window to new screens
-        Debug.Log($"<color={debugColor}>Show Quest Window Test!</color>");
+        Debug.Log($"<color={debugColor}>Show Quest Window here!</color>");
     }
 
     public void SetActiveQuestButtonText(string objectiveTitleText, string questTitleText = null)

@@ -1,6 +1,6 @@
 {
   "name": "com.arbelos.quests",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "displayName": "Quest-Package",
   "description": "A package of scripts for quests and dialog.",
   "unity": "2021.3",
