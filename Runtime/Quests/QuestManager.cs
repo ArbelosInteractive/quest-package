@@ -153,7 +153,6 @@ namespace Arbelos
 
                     await StartObjective(quest.id, quest.objectives[currentSequence].user_objective.id);
                     ActiveQuestButton.Instance.SetActiveQuestButtonText(quest.title, quest.objectives[currentSequence].title);
-                    //questLog.AddQuestToLog(quest, currentSequence);
                     Debug.Log($"<color={debugColor}>Resuming quest: {quest.id} at user-objective: {objective.user_objective.id}</color>");
                     return;
                 }
@@ -182,8 +181,10 @@ namespace Arbelos
                 int index = newQuest.objectives.FindIndex(a => a.sequence == 1);
                 await StartObjective(newQuest.id, newQuest.objectives[index].user_objective.id);
                 ActiveQuestButton.Instance.SetActiveQuestButtonText(newQuest.title, newQuest.objectives[0].title);
-                //questLog.AddQuestToLog(newQuest, 0);
-                onQuestStarted();
+                if (onQuestStarted != null)
+                {
+                    onQuestStarted();
+                }
                 Debug.Log($"<color={debugColor}>Quest Started: {questId}</color>");
                 return;
             }
@@ -213,7 +214,10 @@ namespace Arbelos
                             try
                             {
                                 await GooruManager.Instance.StartObjective(userObjectiveId);
-                                onObjectiveStarted();
+                                if (onObjectiveStarted != null)
+                                {
+                                    onObjectiveStarted();
+                                }
                                 foreach (GameObject objectiveObject in objectiveObjects)
                                 {
                                     if (objectiveObject.GetComponent<ObjectiveObject>().npcId == objective.end_game_object_id)
@@ -229,8 +233,6 @@ namespace Arbelos
                                         {
                                             Debug.Log($"<color={debugColor}>CollectionId is null for user_objective: {objective.user_objective.id}</color>");
                                         }
-
-                                        //show StartOfObjectiveDialog here in the future
 
                                         Debug.Log($"<color={debugColor}>Objective: ({objective.title}) started!</color>");
                                         return;
@@ -285,7 +287,11 @@ namespace Arbelos
 
                                 //post request to backend that this objective is complete
                                 await GooruManager.Instance.CompleteObjective(userObjectiveId, questServiceObject);
-                                onObjectiveCompleted();
+
+                                if (onObjectiveCompleted != null)
+                                {
+                                    onObjectiveCompleted();
+                                }
 
                                 //hide quest marker on current ObjectiveObject
                                 foreach (GameObject objectiveObject in objectiveObjects)
@@ -304,12 +310,16 @@ namespace Arbelos
                                 return;
                             }
 
-
                             //this objective is the final one in the quest
                             if (objective.sequence == quest.objectives.Count)
                             {
                                 dialogueManager.SetAtEndOfQuest(true);
                                 Debug.Log($"<color={debugColor}>Final objective complete!</color>");
+
+                                if (onQuestComplete != null)
+                                {
+                                    onQuestComplete();
+                                }
 
                                 int nextQuestId = 0;
                                 try
@@ -328,7 +338,12 @@ namespace Arbelos
                                     try
                                     {
                                         await StartQuest(nextQuestId);
-                                        onQuestStarted();
+
+                                        if (onQuestStarted != null)
+                                        {
+                                            onQuestStarted();
+                                        }
+
                                         Debug.Log($"<color={debugColor}>Starting new quest: {nextQuestId}</color>");
                                     }
                                     catch (Exception e)
@@ -350,7 +365,6 @@ namespace Arbelos
                                 await StartObjective(quest.id, quest.objectives[currentSequence].user_objective.id);
                                 Debug.Log($"<color={debugColor}>(UpdateQuestInLog) QuestId: {quest.id} | UserObjectiveId: {quest.objectives[currentSequence].user_objective.id}</color>");
                                 ActiveQuestButton.Instance.SetActiveQuestButtonText("", quest.objectives[currentSequence].title);
-                                //questLog.UpdateQuestInLog(quest.id, quest.objectives[currentSequence].user_objective.id);
                             }
                             return;
                         }
