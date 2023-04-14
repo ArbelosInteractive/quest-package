@@ -16,6 +16,8 @@ namespace Arbelos
         private int questId;
         private Objective objective;
 
+        [SerializeField] private List<string> attributes;
+
         private void Start()
         {
             QuestManager.Instance.AddToObjectiveObjectsList(this.gameObject);
