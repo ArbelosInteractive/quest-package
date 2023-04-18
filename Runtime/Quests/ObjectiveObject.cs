@@ -11,13 +11,15 @@ namespace Arbelos
         public string npcId;
         public string npcDisplayName;
         public int objectiveId;
+        [SerializeField] private List<string> attributes;
 
         //fields
         private int questId;
         private Objective objective;
-
-        [SerializeField] private List<string> attributes;
-
+        
+        //constants
+        private const string debugColor = "#e8d168";
+        
         private void Start()
         {
             QuestManager.Instance.AddToObjectiveObjectsList(this.gameObject);
@@ -29,7 +31,7 @@ namespace Arbelos
             objective = newObjective;
             objectiveId = objective.user_objective.id;
 
-            Debug.Log($"ObjectName: {gameObject.name} | ObjectiveId = {objectiveId}", gameObject);
+            Debug.Log($"</color={debugColor}>(Objective Object) ObjectName: {gameObject.name} | ObjectiveId = {objectiveId}</color>", gameObject);
         }
 
         public int GetQuestId()
@@ -40,18 +42,6 @@ namespace Arbelos
         public Objective GetObjective()
         {
             return objective;
-        }
-
-        //for testing purposes - delete later
-        private async void OnTriggerStay(Collider other)
-        {
-            if (Input.GetKeyUp(KeyCode.R))
-            {
-                if (other.tag == "Player")
-                {
-                    await QuestManager.Instance.CompleteObjective(questId, objective.user_objective.id);
-                }
-            }
         }
     }
 }
