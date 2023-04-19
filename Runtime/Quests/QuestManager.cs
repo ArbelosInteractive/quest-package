@@ -73,7 +73,7 @@ namespace Arbelos
                 }
             }
 
-            Debug.Log($"<color={debugColor}>Quest: " + questId + " not found in GetQuestFromList. Null returned.</color>");
+            Debug.Log($"<color={debugColor}>(Quest Manager) Quest: " + questId + " not found in GetQuestFromList. Null returned.</color>");
             return null;
         }
 
@@ -102,7 +102,7 @@ namespace Arbelos
                 }
             }
 
-            Debug.Log($"<color={debugColor}>Objective: " + objectiveId + " not found in GetQuestFromQuestListByObjectiveId. Null returned.</color>");
+            Debug.Log($"<color={debugColor}>(Quest Manager) Objective: " + objectiveId + " not found in GetQuestFromQuestListByObjectiveId. Null returned.</color>");
             return null;
         }
 
@@ -117,7 +117,7 @@ namespace Arbelos
                 {
                     if (quest.user_quest.sequence == 1 && quest.user_quest.progress == 0)
                     {
-                        Debug.Log($"<color={debugColor}> First quest in sequence starting: {quest.id} | {quest.title}</color>");
+                        Debug.Log($"<color={debugColor}>(Quest Manager) First quest in sequence starting: {quest.id} | {quest.title}</color>");
                         await StartQuest(quest.id);
                         return;
                     }
@@ -125,17 +125,17 @@ namespace Arbelos
                     {
                         if (quest.user_quest.progress < 100)
                         {
-                            Debug.Log($"<color={debugColor}> Found quest with progress under 100: {quest.id} | {quest.title}</color>");
+                            Debug.Log($"<color={debugColor}>(Quest Manager) Found quest with progress under 100: {quest.id} | {quest.title}</color>");
                             await ResumeQuest(quest);
                             return;
                         }
                     }
                 }
-                Debug.Log($"<color={debugColor}> No quest found with less than 100 progress. All Quests finished!</color>");
+                Debug.Log($"<color={debugColor}>(Quest Manager) No quest found with less than 100 progress. All Quests finished!</color>");
             }
             catch (Exception e)
             {
-                Debug.LogError($"InitializeQuests failed: {e.Message}");
+                Debug.LogError($"(Quest Manager) InitializeQuests failed: {e.Message}");
             }
         }
 
@@ -149,11 +149,11 @@ namespace Arbelos
                     questList.Add(quest);
                     currentSequence = quest.objectives.FindIndex(a => a.user_objective.id == objective.user_objective.id);
 
-                    Debug.Log($"<color={debugColor}>Current Sequence: {currentSequence}</color>");
+                    Debug.Log($"<color={debugColor}>(Quest Manager) Current Sequence: {currentSequence}</color>");
 
                     await StartObjective(quest.id, quest.objectives[currentSequence].user_objective.id);
                     ActiveQuestButton.Instance.SetActiveQuestButtonText(quest.title, quest.objectives[currentSequence].title);
-                    Debug.Log($"<color={debugColor}>Resuming quest: {quest.id} at user-objective: {objective.user_objective.id}</color>");
+                    Debug.Log($"<color={debugColor}>(Quest Manager) Resuming quest: {quest.id} at user-objective: {objective.user_objective.id}</color>");
                     return;
                 }
             }
@@ -163,14 +163,14 @@ namespace Arbelos
         {
             if (GetQuestFromQuestList(questId) != null)
             {
-                Debug.Log($"<color={debugColor}>Quest: " + questId + " is already in the QuestList!</color>");
+                Debug.Log($"<color={debugColor}>(Quest Manager) Quest: " + questId + " is already in the QuestList!</color>");
                 return;
             }
 
             Quest newQuest = await GetQuest(questId);
             if (newQuest == null)
             {
-                Debug.Log($"<color={debugColor}>Quest: " + questId + " returned null from the server!</color>");
+                Debug.Log($"<color={debugColor}>(Quest Manager) Quest: " + questId + " returned null from the server!</color>");
                 return;
             }
 
@@ -181,13 +181,16 @@ namespace Arbelos
                 int index = newQuest.objectives.FindIndex(a => a.sequence == 1);
                 await StartObjective(newQuest.id, newQuest.objectives[index].user_objective.id);
                 ActiveQuestButton.Instance.SetActiveQuestButtonText(newQuest.title, newQuest.objectives[0].title);
-                onQuestStarted();
-                Debug.Log($"<color={debugColor}>Quest Started: {questId}</color>");
+                if (onQuestStarted != null)
+                {
+                    onQuestStarted();
+                }
+                Debug.Log($"<color={debugColor}>(Quest Manager) Quest Started: {questId}</color>");
                 return;
             }
             catch (Exception e)
             {
-                Debug.LogError($"Failed to start quest: questId");
+                Debug.LogError($"(Quest Manager) Failed to start quest: questId");
                 throw e;
             }
         }
@@ -196,7 +199,7 @@ namespace Arbelos
         {
             if (GetQuestFromQuestList(questId) == null)
             {
-                Debug.Log($"<color={debugColor}>Quest: {questId} is not in the questList. StartObjective: {userObjectiveId} failed.</color>");
+                Debug.Log($"<color={debugColor}>(Quest Manager) Quest: {questId} is not in the questList. StartObjective: {userObjectiveId} failed.</color>");
                 return;
             }
 
@@ -211,7 +214,10 @@ namespace Arbelos
                             try
                             {
                                 await GooruManager.Instance.StartObjective(userObjectiveId);
-                                onObjectiveStarted();
+                                if (onObjectiveStarted != null)
+                                {
+                                    onObjectiveStarted();
+                                }
                                 foreach (GameObject objectiveObject in objectiveObjects)
                                 {
                                     if (objectiveObject.GetComponent<ObjectiveObject>().npcId == objective.end_game_object_id)
@@ -225,21 +231,21 @@ namespace Arbelos
                                         }
                                         catch
                                         {
-                                            Debug.Log($"<color={debugColor}>CollectionId is null for user_objective: {objective.user_objective.id}</color>");
+                                            Debug.Log($"(Quest Manager) <color={debugColor}>CollectionId is null for user_objective: {objective.user_objective.id}</color>");
                                         }
 
-                                        Debug.Log($"<color={debugColor}>Objective: ({objective.title}) started!</color>");
+                                        Debug.Log($"(Quest Manager) <color={debugColor}>Objective: ({objective.title}) started!</color>");
                                         return;
                                     }
                                 }
                             }
                             catch (Exception e)
                             {
-                                Debug.LogError($"Failed to start objective: UserObjectiveId: {userObjectiveId} in Quest: {quest.id} \n{e.Message}");
+                                Debug.LogError($"(Quest Manager) Failed to start objective: UserObjectiveId: {userObjectiveId} in Quest: {quest.id} \n{e.Message}");
                             }
                         }
                     }
-                    Debug.Log($"<color={debugColor}>Objective: {userObjectiveId} not found.</color>");
+                    Debug.Log($"(Quest Manager) <color={debugColor}>Objective: {userObjectiveId} not found.</color>");
                     return;
                 }
             }
@@ -253,7 +259,7 @@ namespace Arbelos
             //an assessment is completed without the appropriate quest in the list
             if (GetQuestFromQuestList(questId) == null)
             {
-                Debug.Log($"<color={debugColor}>Quest: {questId} is not in the questList. Completing without quest.</color>");
+                Debug.Log($"<color={debugColor}>(Quest Manager) Quest: {questId} is not in the questList. Completing without quest.</color>");
                 questServiceObject.withQuest = "false";
                 await GooruManager.Instance.CompleteObjective(userObjectiveId, questServiceObject);
                 return;
@@ -281,7 +287,11 @@ namespace Arbelos
 
                                 //post request to backend that this objective is complete
                                 await GooruManager.Instance.CompleteObjective(userObjectiveId, questServiceObject);
-                                onObjectiveCompleted();
+
+                                if (onObjectiveCompleted != null)
+                                {
+                                    onObjectiveCompleted();
+                                }
 
                                 //hide quest marker on current ObjectiveObject
                                 foreach (GameObject objectiveObject in objectiveObjects)
@@ -289,33 +299,37 @@ namespace Arbelos
                                     if (objectiveObject.GetComponent<ObjectiveObject>().npcId == objective.end_game_object_id)
                                     {
                                         objectiveObject.GetComponentInChildren<NPCQuestMarker>(true).gameObject.SetActive(false);
-                                        Debug.Log($"<color={debugColor}>Objective {objective.title} Complete!</color>");
+                                        Debug.Log($"(Quest Manager) <color={debugColor}>Objective {objective.title} Complete!</color>");
                                         break;
                                     }
                                 }
                             }
                             catch (Exception e)
                             {
-                                Debug.LogError($"Failed to complete objective: UserObjectiveId: {userObjectiveId} in Quest: {quest.id} \n{e.Message}");
+                                Debug.LogError($"(Quest Manager) Failed to complete objective: UserObjectiveId: {userObjectiveId} in Quest: {quest.id} \n{e.Message}");
                                 return;
                             }
-
 
                             //this objective is the final one in the quest
                             if (objective.sequence == quest.objectives.Count)
                             {
                                 dialogueManager.SetAtEndOfQuest(true);
-                                Debug.Log($"<color={debugColor}>Final objective complete!</color>");
+                                Debug.Log($"(Quest Manager) <color={debugColor}>Final objective complete!</color>");
+
+                                if (onQuestComplete != null)
+                                {
+                                    onQuestComplete();
+                                }
 
                                 int nextQuestId = 0;
                                 try
                                 {
                                     nextQuestId = await GetNextQuestId(quest.user_quest.id);
-                                    Debug.Log($"<color={debugColor}>NextQuestId: {nextQuestId} for Quest: {quest.user_quest.id}</color>");
+                                    Debug.Log($"(Quest Manager) <color={debugColor}>NextQuestId: {nextQuestId} for Quest: {quest.user_quest.id}</color>");
                                 }
                                 catch (Exception e)
                                 {
-                                    Debug.LogError($"GetNextQuestId failed with nextQuestId: {quest.user_quest.id}. \n Error: {e.Message}");
+                                    Debug.LogError($"(Quest Manager) GetNextQuestId failed with nextQuestId: {quest.user_quest.id}. \n Error: {e.Message}");
                                 }
 
                                 //there is another quest in the sequence
@@ -324,19 +338,24 @@ namespace Arbelos
                                     try
                                     {
                                         await StartQuest(nextQuestId);
-                                        onQuestStarted();
-                                        Debug.Log($"<color={debugColor}>Starting new quest: {nextQuestId}</color>");
+
+                                        if (onQuestStarted != null)
+                                        {
+                                            onQuestStarted();
+                                        }
+
+                                        Debug.Log($"(Quest Manager) <color={debugColor}>Starting new quest: {nextQuestId}</color>");
                                     }
                                     catch (Exception e)
                                     {
-                                        Debug.LogError($"StartQuest failed with nextQuestId: {nextQuestId}. \n Error: {e.Message}");
+                                        Debug.LogError($"(Quest Manager) StartQuest failed with nextQuestId: {nextQuestId}. \n Error: {e.Message}");
                                     }
                                 }
                                 else
                                 {
-                                    Debug.Log($"<color={debugColor}>Final Quest Complete!</color>");
+                                    Debug.Log($"(Quest Manager) <color={debugColor}>Final Quest Complete!</color>");
+                                    ActiveQuestButton.Instance.SetFinishedAllQuestsButtonText();
                                 }
-                                ActiveQuestButton.Instance.SetActiveQuestButtonDefaults();
                                 questList.Remove(quest);
                             }
                             //this objective is the not final one in the quest
@@ -344,28 +363,24 @@ namespace Arbelos
                             {
                                 currentSequence = quest.objectives.FindIndex(a => a.sequence == objective.sequence + 1);
                                 await StartObjective(quest.id, quest.objectives[currentSequence].user_objective.id);
-                                Debug.Log($"<color={debugColor}>(UpdateQuestInLog) QuestId: {quest.id} | UserObjectiveId: {quest.objectives[currentSequence].user_objective.id}</color>");
+                                Debug.Log($"(Quest Manager) <color={debugColor}>(UpdateQuestInLog) QuestId: {quest.id} | UserObjectiveId: {quest.objectives[currentSequence].user_objective.id}</color>");
                                 ActiveQuestButton.Instance.SetActiveQuestButtonText("", quest.objectives[currentSequence].title);
                             }
                             return;
                         }
                     }
-                    Debug.Log("<color={debugColor}>Objective:" + userObjectiveId + " not found.</color>");
+                    Debug.Log("(Quest Manager) <color={debugColor}>Objective:" + userObjectiveId + " not found.</color>");
                     return;
                 }
             }
         }
 
-        public void SetQuestAsActiveQuest(Quest quest)
-        {
-            activeQuest = quest;
-        }
 
         //NPC
         public void AddToObjectiveObjectsList(GameObject objectiveObject)
         {
             objectiveObjects.Add(objectiveObject);
-            Debug.Log($"<color={debugColor}>{objectiveObject.GetComponent<ObjectiveObject>().npcId} added to ObjectiveObjects list!</color>");
+            Debug.Log($"(Quest Manager) <color={debugColor}>{objectiveObject.GetComponent<ObjectiveObject>().npcId} added to ObjectiveObjects list!</color>");
         }
 
         public List<string> GetDialogueData(Objective objective)
@@ -380,7 +395,6 @@ namespace Arbelos
                 foreach (var message in sortedMessages)
                 {
                     dialogueText.Add(message.text);
-                    Debug.Log($"<color={debugColor}>Message: </color>{message.text}</color>");
                 }
             }
             return dialogueText;
