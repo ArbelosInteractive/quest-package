@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Gooru;
@@ -10,7 +9,7 @@ namespace Arbelos
         //Inspector properties
         public string npcId;
         public string npcDisplayName;
-        public int objectiveId;
+        private int objectiveId;
         [SerializeField] private List<string> attributes;
 
         //fields
@@ -22,7 +21,17 @@ namespace Arbelos
         
         private void Start()
         {
-            QuestManager.Instance.AddToObjectiveObjectsList(this.gameObject);
+            QuestManager.Instance.AddToObjectiveObjectsList(this);
+        }
+        
+        public int GetQuestId()
+        {
+            return questId;
+        }
+
+        public Objective GetObjective()
+        {
+            return objective;
         }
 
         public void SetInfo(int newQuestId, Objective newObjective)
@@ -34,14 +43,9 @@ namespace Arbelos
             Debug.Log($"</color={debugColor}>(Objective Object) ObjectName: {gameObject.name} | ObjectiveId = {objectiveId}</color>", gameObject);
         }
 
-        public int GetQuestId()
+        public void ShowNPCQuestMarker()
         {
-            return questId;
-        }
-
-        public Objective GetObjective()
-        {
-            return objective;
+            this.GetComponentInChildren<NPCQuestMarker>(true).gameObject.SetActive(true);
         }
     }
 }
