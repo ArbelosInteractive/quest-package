@@ -33,3 +33,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Deleted the KeyBind "R" that is no longer used
 - All Quest related Debug.Log calls now use the Quest system color
 
+## [1.0.6] - 2023-04-21
+### Updated
+- fixed references to firstName and lastName to first_name and last_name
