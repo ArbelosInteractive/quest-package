@@ -10,14 +10,9 @@ namespace Arbelos
     public class QuestManager : MonoBehaviour
     {
         //fields
-        private List<Course> courseList = new List<Course>();
+        [SerializeField] private List<Course> courseList = new List<Course>();
         private Quest activeQuest = new Quest();
-        //private List<GameObject> objectiveObjects;
-        private List<ObjectiveObject> objectiveObjects;
-        
-        private List<Quest> questList = new List<Quest>(); //remove this later
-        private string collectionId = ""; //remove this later
-        public int currentSequence = 0; //remove this later
+        private List<ObjectiveObject> objectiveObjects = new List<ObjectiveObject>();
 
         //constants
         private const string debugColor = "#e8d168";
@@ -61,79 +56,110 @@ namespace Arbelos
 
         private async Task<Quest> GetQuest(int questId)
         {
-            Quest newQuest = new Quest();
-            newQuest = await GooruManager.Instance.GetQuest(questId);
-            return newQuest;
+            return await GooruManager.Instance.GetQuest(questId);
         }
 
-        public Quest GetQuestFromQuestList(int questId)
+        public Quest GetQuestFromCourseList(int questId)
         {
-            foreach (Quest quest in questList)
+            foreach (Course course in courseList)
             {
-                if (quest.id == questId)
+                if (course.quest.id == questId)
                 {
-                    return quest;
+                    return course.quest;
                 }
             }
 
-            Debug.Log($"<color={debugColor}>(Quest Manager) Quest: {questId} not found in GetQuestFromList. Null returned.</color>");
+            Debug.Log($"<color={debugColor}>(Quest Manager) Quest: {questId} not found in GetQuestFromCourseList. Null returned.</color>");
             return null;
         }
 
         private async Task<int> GetNextQuestId(int questId)
         {
-            NextQuestResponse nextQuest = new NextQuestResponse();
-            nextQuest = await GooruManager.Instance.GetNextQuest(questId);
+            NextQuestResponse nextQuest = await GooruManager.Instance.GetNextQuest(questId);
             return nextQuest.quest_id;
         }
 
+        //TODO:change this to take a courseId and return a collectionId of a certain course
         public string GetCollectionId()
         {
-            return collectionId;
+            return "";
         }
 
-        public Quest GetQuestFromQuestListByObjectiveId(int objectiveId)
+        private void SetActiveQuest(Quest quest, int objectiveSequence)
         {
-            foreach (Quest quest in questList)
-            {
-                foreach (Objective objective in quest.objectives)
-                {
-                    if (objective.id == objectiveId)
-                    {
-                        return quest;
-                    }
-                }
-            }
-
-            Debug.Log($"<color={debugColor}>(Quest Manager) Objective: {objectiveId} not found in GetQuestFromQuestListByObjectiveId. Null returned.</color>");
-            return null;
+            activeQuest = quest;
+            ActiveQuestButton.Instance.SetActiveQuestButtonText(activeQuest.title, activeQuest.objectives[objectiveSequence - 1].title);
         }
+        
+        //TODO: unused method? figure out if this ok to remove
+        // public Quest GetQuestFromQuestListByObjectiveId(int objectiveId)
+        // {
+        //     foreach (Quest quest in questList)
+        //     {
+        //         foreach (Objective objective in quest.objectives)
+        //         {
+        //             if (objective.id == objectiveId)
+        //             {
+        //                 return quest;
+        //             }
+        //         }
+        //     }
+        //
+        //     Debug.Log($"<color={debugColor}>(Quest Manager) Objective: {objectiveId} not found in GetQuestFromQuestListByObjectiveId. Null returned.</color>");
+        //     return null;
+        // }
 
+        //TODO:currently there is only 1 course (quest line) from the backend, this method needs to be upgraded in the future to support multiple
+        //TODO: rename this method "InitializeCourses" after finishing everything else to avoid redoing reference in inspector
         public async Task InitializeQuests()
         {
             try
             {
-                List<Quest> quests = new List<Quest>();
-                quests = await GetAllQuests();
+                List<Quest> quests = await GetAllQuests();
                 quests.Sort((x, y) => x.user_quest.sequence.CompareTo(y.user_quest.sequence));
+
                 foreach (Quest quest in quests)
                 {
                     if (quest.user_quest.sequence == 1 && quest.user_quest.progress == 0)
                     {
+                        Course course = new Course
+                        {
+                            id = 0,
+                            title = "Course Title",
+                            quest = quests[0],
+                            questSequence = 1,
+                            objectiveSequence = 1,
+                            collectionId = ""
+                        };
+                        await StartCourse(course);
                         Debug.Log($"<color={debugColor}>(Quest Manager) First quest in sequence starting: {quest.id} | {quest.title}</color>");
-                        await StartQuest(quest.id);
                         return;
                     }
-                    else
+
+                    if (quest.user_quest.progress < 100)
                     {
-                        if (quest.user_quest.progress < 100)
+                        quest.objectives.Sort((x, y) => x.sequence.CompareTo(y.sequence));
+                        foreach (Objective objective in quest.objectives)
                         {
-                            Debug.Log($"<color={debugColor}>(Quest Manager) Found quest with progress under 100: {quest.id} | {quest.title}</color>");
-                            await ResumeQuest(quest);
-                            return;
+                            if (objective.user_objective.progress < 100)
+                            {
+                                Course course = new Course
+                                {
+                                    id = 0,
+                                    title = "Course Title",
+                                    quest = quests[quest.user_quest.sequence - 1],
+                                    questSequence = quest.user_quest.sequence,
+                                    objectiveSequence = objective.sequence,
+                                    collectionId = ""
+                                };
+                                await StartCourse(course);
+                                Debug.Log($"<color={debugColor}>(Quest Manager) Found quest with progress under 100: {quest.id} | {quest.title}</color>");
+                                return;
+                            }
                         }
                     }
                 }
+                ActiveQuestButton.Instance.SetFinishedAllQuestsButtonText();
                 Debug.Log($"<color={debugColor}>(Quest Manager) No quest found with less than 100 progress. All Quests finished!</color>");
             }
             catch (Exception e)
@@ -142,28 +168,18 @@ namespace Arbelos
             }
         }
 
-        private async Task ResumeQuest(Quest quest)
+        private async Task StartCourse(Course course)
         {
-            quest.objectives.Sort((x, y) => x.sequence.CompareTo(y.sequence));
-            foreach (Objective objective in quest.objectives)
-            {
-                if (objective.user_objective.progress < 100)
-                {
-                    questList.Add(quest);
-                    currentSequence = quest.objectives.FindIndex(a => a.user_objective.id == objective.user_objective.id);
-                    await StartObjective(quest.id, quest.objectives[currentSequence].user_objective.id);
-                    ActiveQuestButton.Instance.SetActiveQuestButtonText(quest.title, quest.objectives[currentSequence].title);
-                    Debug.Log($"<color={debugColor}>(Quest Manager) Resuming quest: {quest.id} at user-objective: {objective.user_objective.id}</color>");
-                    return;
-                }
-            }
+            courseList.Add(course);
+            await StartQuest(course.quest.id, course.objectiveSequence);
+            Debug.Log($"<color={debugColor}>(Quest Manager) Starting course: {course.id} | {course.title} at objective: {course.objectiveSequence}</color>");
         }
-
-        public async Task StartQuest(int questId)
+        
+        public async Task StartQuest(int questId, int objectiveSequence)
         {
-            if (GetQuestFromQuestList(questId) != null)
+            if (GetQuestFromCourseList(questId) != null)
             {
-                Debug.Log($"<color={debugColor}>(Quest Manager) Quest: " + questId + " is already in the QuestList!</color>");
+                Debug.Log($"<color={debugColor}>(Quest Manager) Quest: " + questId + " is already in the CourseList!</color>");
                 return;
             }
 
@@ -177,77 +193,59 @@ namespace Arbelos
             try
             {
                 await GooruManager.Instance.StartQuest(newQuest.user_quest.id);
-                questList.Add(newQuest);
-                int index = newQuest.objectives.FindIndex(a => a.sequence == 1);
-                await StartObjective(newQuest.id, newQuest.objectives[index].user_objective.id);
-                ActiveQuestButton.Instance.SetActiveQuestButtonText(newQuest.title, newQuest.objectives[0].title);
-                if (onQuestStarted != null)
-                {
-                    onQuestStarted();
-                }
+                SetActiveQuest(newQuest, 1);
+                await StartObjective(newQuest.id, newQuest.objectives[objectiveSequence].user_objective.id);
+
+                //Quest Started Event
+                onQuestStarted?.Invoke();
+                
                 Debug.Log($"<color={debugColor}>(Quest Manager) Quest Started: {questId}</color>");
-                return;
             }
             catch (Exception e)
             {
-                Debug.LogError($"(Quest Manager) Failed to start quest: {questId}");
-                throw e;
+                Debug.LogError($"(Quest Manager) Failed to start quest: {questId} \n {e.Message}");
             }
         }
 
-        public async Task StartObjective(int questId, int userObjectiveId)
+        private async Task StartObjective(int questId, int userObjectiveId)
         {
-            if (GetQuestFromQuestList(questId) == null)
+            foreach (Course course in courseList)
             {
-                Debug.Log($"<color={debugColor}>(Quest Manager) Quest: {questId} is not in the questList. StartObjective: {userObjectiveId} failed.</color>");
-                return;
-            }
-
-            foreach (Quest quest in questList)
-            {
-                if (quest.id == questId)
+                if (course.quest.id != questId) continue;
+                foreach (Objective objective in course.quest.objectives)
                 {
-                    foreach (Objective objective in quest.objectives)
+                    if (objective.user_objective.id != userObjectiveId) continue;
+                    try
                     {
-                        if (objective.user_objective.id == userObjectiveId)
+                        await GooruManager.Instance.StartObjective(userObjectiveId);
+                        onObjectiveStarted?.Invoke();
+                                
+                        foreach (ObjectiveObject objectiveObject in objectiveObjects)
                         {
+                            if (objectiveObject.npcId != objective.end_game_object_id) continue;
+                            objectiveObject.SetInfo(questId, objective);
+                            objectiveObject.ShowNPCQuestMarker();
+
                             try
                             {
-                                await GooruManager.Instance.StartObjective(userObjectiveId);
-                                if (onObjectiveStarted != null)
-                                {
-                                    onObjectiveStarted();
-                                }
-                                foreach (ObjectiveObject objectiveObject in objectiveObjects)
-                                {
-                                    if (objectiveObject.npcId == objective.end_game_object_id)
-                                    {
-                                        objectiveObject.SetInfo(questId, objective);
-                                        objectiveObject.ShowNPCQuestMarker();
-
-                                        try
-                                        {
-                                            collectionId = objective.navigator_objective_detail.collection_id;
-                                        }
-                                        catch
-                                        {
-                                            Debug.Log($"<color={debugColor}>(Quest Manager) CollectionId is null for user_objective: {objective.user_objective.id}</color>");
-                                        }
-
-                                        Debug.Log($"<color={debugColor}>(Quest Manager) Objective: ({objective.title}) started!</color>");
-                                        return;
-                                    }
-                                }
+                                course.collectionId = objective.navigator_objective_detail.collection_id;
                             }
-                            catch (Exception e)
+                            catch
                             {
-                                Debug.LogError($"(Quest Manager) Failed to start objective: UserObjectiveId: {userObjectiveId} in Quest: {quest.id} \n{e.Message}");
+                                Debug.Log($"<color={debugColor}>(Quest Manager) CollectionId is null for user_objective: {objective.user_objective.id}</color>");
                             }
+
+                            Debug.Log($"<color={debugColor}>(Quest Manager) Objective: ({objective.title}) started!</color>");
+                            return;
                         }
                     }
-                    Debug.Log($"<color={debugColor}>(Quest Manager) Objective: {userObjectiveId} not found.</color>");
-                    return;
+                    catch (Exception e)
+                    {
+                        Debug.LogError($"(Quest Manager) Failed to start objective: UserObjectiveId: {userObjectiveId} in Quest: {course.quest.id} \n{e.Message}");
+                    }
                 }
+                Debug.Log($"<color={debugColor}>(Quest Manager) Objective: {userObjectiveId} not found.</color>");
+                return;
             }
         }
 
@@ -257,7 +255,7 @@ namespace Arbelos
             QuestServiceObject questServiceObject = new QuestServiceObject();
 
             //an assessment is completed without the appropriate quest in the list
-            if (GetQuestFromQuestList(questId) == null)
+            if (GetQuestFromCourseList(questId) == null)
             {
                 Debug.Log($"<color={debugColor}>(Quest Manager) Quest: {questId} is not in the questList. Completing without quest.</color>");
                 questServiceObject.withQuest = "false";
@@ -265,113 +263,101 @@ namespace Arbelos
                 return;
             }
 
-            //complete objective with quest in the list
-            foreach (Quest quest in questList)
+            //complete objective with quest in the course list
+            foreach (Course course in courseList)
             {
-                if (quest.id == questId)
+                if (course.quest.id != questId) continue;
+                
+                foreach (Objective objective in course.quest.objectives)
                 {
-                    foreach (Objective objective in quest.objectives)
+                    if (objective.user_objective.id != userObjectiveId) continue;
+                    
+                    try
                     {
-                        if (objective.user_objective.id == userObjectiveId)
+                        questServiceObject.withQuest = "true";
+
+                        //display dialog at the end of an objective
+                        List<string> dialogs = GetDialogueData(objective);
+                        if (dialogs.Count > 0)
+                        {
+                            dialogueManager.StartConversation(dialogs, objective.end_game_object.first_name, objective.end_game_object.last_name);
+                        }
+
+                        //post request to backend that this objective is complete
+                        await GooruManager.Instance.CompleteObjective(userObjectiveId, questServiceObject);
+                        
+                        //Complete Objective Event
+                        onObjectiveCompleted?.Invoke();
+
+                        //hide quest marker on current ObjectiveObject
+                        foreach (ObjectiveObject objectiveObject in objectiveObjects)
+                        {
+                            if (objectiveObject.npcId != objective.end_game_object_id) continue;
+                            objectiveObject.GetComponentInChildren<NPCQuestMarker>(true).gameObject.SetActive(false);
+                            break;
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogError($"(Quest Manager) Failed to complete objective: UserObjectiveId: {userObjectiveId} in Quest: {course.quest.id} \n{e.Message}");
+                        return;
+                    }
+                    
+                    Debug.Log($"<color={debugColor}>(Quest Manager) Objective {objective.title} Complete!</color>");
+
+                    //this objective is the final one in the quest
+                    if (objective.sequence == course.quest.objectives.Count)
+                    {
+                        dialogueManager.SetAtEndOfQuest(true);
+                        Debug.Log($"<color={debugColor}>(Quest Manager) Final objective complete!</color>");
+                        
+                        //Quest Complete Event
+                        onQuestComplete?.Invoke();
+
+                        int nextQuestId = 0;
+                        try
+                        {
+                            nextQuestId = await GetNextQuestId(course.quest.user_quest.id);
+                            Debug.Log($"<color={debugColor}>(Quest Manager) NextQuestId: {nextQuestId} for Quest: {course.quest.user_quest.id}</color>");
+                        }
+                        catch (Exception e)
+                        {
+                            Debug.LogError($"(Quest Manager) GetNextQuestId failed with nextQuestId: {course.quest.user_quest.id}. \n Error: {e.Message}");
+                        }
+
+                        //there is another quest in the sequence
+                        if (nextQuestId != 0)
                         {
                             try
                             {
-                                questServiceObject.withQuest = "true";
-
-                                //display dialog at the end of an objective
-                                List<string> dialogs = GetDialogueData(objective);
-                                if (dialogs.Count > 0)
-                                {
-                                    dialogueManager.StartConversation(dialogs, objective.end_game_object.firstName, objective.end_game_object.lastName);
-                                }
-
-                                //post request to backend that this objective is complete
-                                await GooruManager.Instance.CompleteObjective(userObjectiveId, questServiceObject);
-
-                                if (onObjectiveCompleted != null)
-                                {
-                                    onObjectiveCompleted();
-                                }
-
-                                //hide quest marker on current ObjectiveObject
-                                foreach (ObjectiveObject objectiveObject in objectiveObjects)
-                                {
-                                    if (objectiveObject.npcId == objective.end_game_object_id)
-                                    {
-                                        objectiveObject.GetComponentInChildren<NPCQuestMarker>(true).gameObject.SetActive(false);
-                                        Debug.Log($"<color={debugColor}>(Quest Manager) Objective {objective.title} Complete!</color>");
-                                        break;
-                                    }
-                                }
+                                await StartQuest(nextQuestId, 1);
+                                Debug.Log($"<color={debugColor}>(Quest Manager) Starting new quest: {nextQuestId}</color>");
                             }
                             catch (Exception e)
                             {
-                                Debug.LogError($"(Quest Manager) Failed to complete objective: UserObjectiveId: {userObjectiveId} in Quest: {quest.id} \n{e.Message}");
-                                return;
+                                Debug.LogError($"(Quest Manager) StartQuest failed with nextQuestId: {nextQuestId}. \n Error: {e.Message}");
                             }
-
-                            //this objective is the final one in the quest
-                            if (objective.sequence == quest.objectives.Count)
-                            {
-                                dialogueManager.SetAtEndOfQuest(true);
-                                Debug.Log($"<color={debugColor}>(Quest Manager) Final objective complete!</color>");
-
-                                if (onQuestComplete != null)
-                                {
-                                    onQuestComplete();
-                                }
-
-                                int nextQuestId = 0;
-                                try
-                                {
-                                    nextQuestId = await GetNextQuestId(quest.user_quest.id);
-                                    Debug.Log($"<color={debugColor}>(Quest Manager) NextQuestId: {nextQuestId} for Quest: {quest.user_quest.id}</color>");
-                                }
-                                catch (Exception e)
-                                {
-                                    Debug.LogError($"(Quest Manager) GetNextQuestId failed with nextQuestId: {quest.user_quest.id}. \n Error: {e.Message}");
-                                }
-
-                                //there is another quest in the sequence
-                                if (nextQuestId != 0)
-                                {
-                                    try
-                                    {
-                                        await StartQuest(nextQuestId);
-
-                                        if (onQuestStarted != null)
-                                        {
-                                            onQuestStarted();
-                                        }
-
-                                        Debug.Log($"<color={debugColor}>(Quest Manager) Starting new quest: {nextQuestId}</color>");
-                                    }
-                                    catch (Exception e)
-                                    {
-                                        Debug.LogError($"(Quest Manager) StartQuest failed with nextQuestId: {nextQuestId}. \n Error: {e.Message}");
-                                    }
-                                }
-                                else
-                                {
-                                    Debug.Log($"<color={debugColor}>(Quest Manager) Final Quest Complete!</color>");
-                                    ActiveQuestButton.Instance.SetFinishedAllQuestsButtonText();
-                                }
-                                questList.Remove(quest);
-                            }
-                            //this objective is the not final one in the quest
-                            else
-                            {
-                                currentSequence = quest.objectives.FindIndex(a => a.sequence == objective.sequence + 1);
-                                await StartObjective(quest.id, quest.objectives[currentSequence].user_objective.id);
-                                Debug.Log($"<color={debugColor}>(Quest Manager) QuestId: {quest.id} | UserObjectiveId: {quest.objectives[currentSequence].user_objective.id}</color>");
-                                ActiveQuestButton.Instance.SetActiveQuestButtonText("", quest.objectives[currentSequence].title);
-                            }
-                            return;
+                        }
+                        //there are no more quests in the sequence, course finished!
+                        else
+                        {
+                            Debug.Log($"<color={debugColor}>(Quest Manager) Final Quest Complete!</color>");
+                            ActiveQuestButton.Instance.SetFinishedAllQuestsButtonText();
+                            courseList.Remove(course);
                         }
                     }
-                    Debug.Log($"<color={debugColor}>(Quest Manager) Objective: {userObjectiveId} not found.</color>");
+                    //this objective is the not final one in the quest
+                    else
+                    {
+                        course.objectiveSequence = course.quest.objectives.FindIndex(a => a.sequence == objective.sequence + 1);
+                        await StartObjective(course.quest.id, course.quest.objectives[course.objectiveSequence].user_objective.id);
+                        Debug.Log($"<color={debugColor}>(Quest Manager) QuestId: {course.quest.id} | UserObjectiveId: {course.quest.objectives[course.objectiveSequence].user_objective.id}</color>");
+                        ActiveQuestButton.Instance.SetActiveQuestButtonText("", course.quest.objectives[course.objectiveSequence].title);
+                    }
                     return;
                 }
+                Debug.Log($"<color={debugColor}>(Quest Manager) Objective: {userObjectiveId} not found.</color>");
+                return;
             }
         }
 
@@ -385,13 +371,16 @@ namespace Arbelos
         private List<string> GetDialogueData(Objective objective)
         {
             List<string> dialogueText = new List<string>();
-            List<Message> messages = new List<Message>();
 
             if (objective.objective_dialog != null)
             {
-                messages = objective.objective_dialog.messages;
-                List<Message> sortedMessages = messages.OrderBy(message => message.sequence).ToList();
-                foreach (var message in sortedMessages)
+                List<Message> messages = objective.objective_dialog.messages;
+                messages.Sort((x,y) => x.sequence.CompareTo(y.sequence));
+                
+                //TODO: remove this line if new sorting works
+                //List<Message> sortedMessages = messages.OrderBy(message => message.sequence).ToList();
+                
+                foreach (var message in messages)
                 {
                     dialogueText.Add(message.text);
                 }

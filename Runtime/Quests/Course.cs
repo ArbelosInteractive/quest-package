@@ -1,11 +1,15 @@
 using Gooru;
-using UnityEngine;
 
-public class Course : MonoBehaviour
+namespace Arbelos
 {
-    public int id { get; set; }
-    public int currentQuestSequence { get; set; }
-    public int currentObjectiveSequence { get; set; }
-    public string currentCollectionId { get; set; }
-    public Quest currentQuest { get; set; }
+    [System.Serializable]
+    public class Course
+    {
+        public int id { get; set; }
+        public string title { get; set; }
+        public int questSequence { get; set; }
+        public int objectiveSequence { get; set; }
+        public string collectionId { get; set; }
+        public Quest quest { get; set; }
+    }
 }
