@@ -57,3 +57,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Updated
 
 - Make getCollectionId function async
+
+## [1.0.8] - 2023-06-28
+
+### Updated
+
+- Fix async error

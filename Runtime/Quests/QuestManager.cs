@@ -84,7 +84,7 @@ namespace Arbelos
             return nextQuest.quest_id;
         }
 
-        public async string GetCollectionId()
+        public async Task<string> GetCollectionId()
         {
             return collectionId;
         }
