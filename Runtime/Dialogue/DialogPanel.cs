@@ -7,13 +7,14 @@ using System.Linq;
 
 namespace Arbelos
 {
-    public class DialoguePanel : MonoBehaviour
+    public class DialogPanel : MonoBehaviour
     {
         //private fields
         [SerializeField] private TMP_Text nameText;
         [SerializeField] private TMP_Text messageText;
 
-        private IDialogueManager dialogueManager;
+
+        private IDialogManager dialogueManager;
 
         public void SetDialog(string name, string message)
         {
@@ -25,8 +26,8 @@ namespace Arbelos
         {
             if (dialogueManager == null)
             {
-                IEnumerable<IDialogueManager> dialogueManagerList = FindObjectsOfType<MonoBehaviour>().OfType<IDialogueManager>();
-                dialogueManager = dialogueManagerList.ElementAt(0); //realisticlly there should only be 1
+                IEnumerable<IDialogManager> dialogueManagerList = FindObjectsOfType<MonoBehaviour>().OfType<IDialogManager>();
+                dialogueManager = dialogueManagerList.ElementAt(0); //realistically there should only be 1
             }
 
             dialogueManager.ProgressConversation();

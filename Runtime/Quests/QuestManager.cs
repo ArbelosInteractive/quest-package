@@ -20,7 +20,7 @@ namespace Arbelos
         private const string debugColor = "#e8d168";
 
         //component references
-        private IDialogueManager dialogueManager;
+        private IDialogManager dialogueManager;
         private ActiveQuestButton activeQuestButton;
 
         //events
@@ -41,7 +41,7 @@ namespace Arbelos
             Instance = this;
             if (dialogueManager == null)
             {
-                IEnumerable<IDialogueManager> dialogueManagerList = FindObjectsOfType<MonoBehaviour>().OfType<IDialogueManager>();
+                IEnumerable<IDialogManager> dialogueManagerList = FindObjectsOfType<MonoBehaviour>().OfType<IDialogManager>();
                 dialogueManager = dialogueManagerList.ElementAt(0); //realistically there should only be 1
             }
 

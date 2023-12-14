@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Arbelos
 {
-    public interface IDialogueManager
+    public interface IDialogManager
     {
         public void SetAtEndOfQuest(bool atEnd);
         public void StartConversation(List<string> dialogues, string firstName, string lastName);
