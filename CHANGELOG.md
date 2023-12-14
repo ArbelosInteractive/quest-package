@@ -63,3 +63,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Updated
 
 - Fix async error
+
+## [1.0.9] - 2023-12-14
+
+### Updated
+
+- Changed instances of "Dialogue" to "Dialog for consistency
